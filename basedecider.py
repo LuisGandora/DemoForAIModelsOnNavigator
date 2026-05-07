@@ -44,7 +44,7 @@ def talkToModel(mesg : str, modelName : str):
             response = "Image successfully written to outputImage.png"
         else:
             response = "Error: No image data received from the server."
-    elif modelName == "whisper-large-v3" or modelName == "kokoro": #Audio
+    elif modelName == "whisper-large-v3": #Audio
         #Turn Audio to text
         audio = open("HelloMesg.mp3", "rb")
         responseL = client.audio.transcriptions.create(
@@ -52,6 +52,15 @@ def talkToModel(mesg : str, modelName : str):
             file = audio
         )
         response += responseL.text
+    elif modelName == "kokoro": # Text-to-Speech
+        with client.audio.speech.with_streaming_response.create(
+            model=modelName,
+            voice="alloy", # Kokoro usually requires a voice parameter
+            input="Say Hello",   # The text you want spoken
+            instructions="Speak in a monotone voice"
+        ) as response_audio:
+            response_audio.stream_to_file("outputAudio.mp3")
+        response = "Audio successfully written to outputAudio.mp3"
     else: # Normal response
         response = client.chat.completions.create(
             model=modelName , # model to send to the proxy
@@ -66,11 +75,12 @@ def talkToModel(mesg : str, modelName : str):
 
 #Just a test runner using inputs to pick which model a user wants.
 def main():
-    listOfModels = ["llama-3.1-70b-instruct", 
+    listOfModels = [
+    "llama-3.1-70b-instruct", 
     "llama-3.1-8b-instruct", 
     "llama-3.1-nemotron-nano-8B-v1", 
     "llama-3.3-70b-instruct",
-    "mistral-7b-instruct", #Needs to be checked-Did not run due to UF blocking me
+    "mistral-7b-instruct", 
     "mistral-small-3.1",
     "nemotron-3-nano-30b-a3b", 
     "nemotron-3-super-120b-a12b",
@@ -82,20 +92,17 @@ def main():
     ,"sfr-embedding-mistral"
     ,"nomic-embed-text-v1.5"
     ,"flux.1-dev"
-    ,"flux.1-schnell" #Does not work
-    ,"whisper-large-v3" #Also Errors Out
+    ,"flux.1-schnell" 
+    ,"whisper-large-v3" 
     ,"kokoro" #Also errors out
     ] # List of all models available under navigator-toolkit
     print("Choose which model you want to communicate with: ")
     try:
-        # print(talkToModel(" ", listOfModels[6]))
         for i in range(18, len(listOfModels)):
             print(str(i) + ": " + listOfModels[i])
-            print(talkToModel(" ", listOfModels[i]))
-            time.sleep(3)
             
-        # option = input("Option:")
-        # print(talkToModel(" ", listOfModels[int(option)]))
+        option = input("Option:")
+        print(talkToModel(" ", listOfModels[int(option)]))
     except Exception as e:
         print(str(e))
 
