@@ -1,1 +1,5 @@
 openai
+dotenv
+os
+base64
+time
