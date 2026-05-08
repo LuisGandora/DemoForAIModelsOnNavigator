@@ -6,10 +6,11 @@ my_API = os.getenv("LITELLMAPI")
 import openai
 import base64 #For writing images
 import time
+import streamlit as st
 
 #Global Client variable using a litellm openAI proxy to access all models in navigator toolkit
 client = openai.OpenAI(
-    api_key= my_API,
+    api_key= st.secrets["LITELLMAPI"],
     base_url="https://api.ai.it.ufl.edu" # LiteLLM Proxy is OpenAI compatible, Read More: https://docs.litellm.ai/docs/proxy/user_keys
 )
 

@@ -1,3 +1,4 @@
 .env
 outputImage.png
 outputAudio.mp3
+.streamlit/
