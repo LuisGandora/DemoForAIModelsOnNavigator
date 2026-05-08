@@ -17,58 +17,61 @@ client = openai.OpenAI(
 # Create model via a function to return the chat data, returns a string repping the mesg
 # Majority of models utilize the openai API
 def talkToModel(mesg : str, modelName : str):
-    response = ""
-    if modelName == "sfr-embedding-mistral" or modelName =="nomic-embed-text-v1.5": #Embedding
-        responseR = client.embeddings.create(
-            model=modelName,
-            input = mesg,
-            encoding_format="float"
-        )
-        response = responseR.data[0].embedding
-    elif modelName == "flux.1-dev" or modelName == "flux.1-schnell": #Images
-        responseT = client.images.generate(
-            model=modelName,
-            prompt=mesg,
-            response_format="b64_json"
-        )
-        image_base64 = responseT.data[0].b64_json
-        
-        if image_base64:
-            images_bytes = base64.b64decode(image_base64)
-            with open("outputImage.png", "wb") as f:
-                f.write(images_bytes)
-            response = "Image successfully written to outputImage.png"
-        else:
-            response = "Error: No image data received from the server."
-    elif modelName == "whisper-large-v3": #Audio
-        #Turn Audio to text
-        audio = open("HelloMesg.mp3", "rb")
-        responseL = client.audio.transcriptions.create(
-            model=modelName,
-            file = audio
-        )
-        response += responseL.text
-    elif modelName == "kokoro": # Text-to-Speech
-        with client.audio.speech.with_streaming_response.create(
-            model=modelName,
-            voice="alloy", # Kokoro usually requires a voice parameter
-            input="Say Hello",   # The text you want spoken
-            instructions="Speak in a monotone voice"
-        ) as response_audio:
-            response_audio.stream_to_file("outputAudio.mp3")
-        response = "Audio successfully written to outputAudio.mp3"
-    else: # Normal response
-        responseT = client.chat.completions.create(
-            model=modelName , # model to send to the proxy
-            messages = [
-                {
-                    "role": "user",
-                    "content": mesg
-                }
-            ]
-        )
-        response = responseT.choices[0].message.content
-    return response
+    response = client.chat.completions.create(
+        model=modelName , # model to send to the proxy
+        messages = [
+            {
+                "role": "user",
+                "content": mesg
+            }
+        ]
+    )
+    return response.choices[0].message.content
+
+#For "whisper-large-v3", audio to text
+def audioToText(modelName: str, input: str):
+    #Turn Audio to text
+    audio = open(input, "rb") #Default, later a path would be included
+    responseL = client.audio.transcriptions.create(
+        model=modelName,
+        file = audio
+    )
+    return responseL.text
+
+#For "kokoro", text to speech, doesnt return filepath
+def generateAudio(mesg: str, modelName: str, filePath:  str):
+    with client.audio.speech.with_streaming_response.create(
+        model=modelName,
+        voice="alloy", # Kokoro usually requires a voice parameter
+        input=mesg,   # The text you want spoken
+        instructions="Speak in a monotone voice"
+    ) as response_audio:
+        response_audio.stream_to_file(filePath)
+    
+
+#For "flux.1-dev" or "flux.1-schnell", text to images
+def imageCreation(mesg: str, modelName : str, filePath: str):
+    responseT = client.images.generate(
+        model=modelName,
+        prompt=mesg,
+        response_format="b64_json"
+    )
+    image_base64 = responseT.data[0].b64_json
+    if image_base64:
+        images_bytes = base64.b64decode(image_base64)
+        with open(filePath, "wb") as f:
+            f.write(images_bytes)
+    
+#For "sfr-embedding-mistral" or "nomic-embed-text-v1.5", for embedding text into images
+def embedding(mesg: str, modelName :str, filePath: str):
+    responseR = client.embeddings.create(
+        model=modelName,
+        input = mesg,
+        encoding_format="float"
+    )
+    vec = responseR.data[0].embedding
+    with open(filePath, "w") as f:
+        f.write(str(vec))
 
 #Just a test runner using inputs to pick which model a user wants.
 # def main():
